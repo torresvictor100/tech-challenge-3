@@ -1,0 +1,61 @@
+# Local agent/editor state
+.codex/
+.idea/
+.vscode/
+*.iws
+*.iml
+*.ipr
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+application-local.properties
+application-local.yml
+
+# Gradle
+**/.gradle/
+**/build/
+!**/gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Spring Initializr generated help
+**/HELP.md
+
+# Java
+*.class
+out/
+bin/
+!**/src/main/**/out/
+!**/src/test/**/out/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# STS/Eclipse
+.apt_generated/
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+
+# NetBeans
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# Docker/local runtime data
+docker-compose.override.yml
+*.pid
