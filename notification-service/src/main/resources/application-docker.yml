@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: notification-service
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:rabbitmq}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+  cassandra:
+    contact-points: ${SPRING_CASSANDRA_CONTACT_POINTS:cassandra}
+    port: ${SPRING_CASSANDRA_PORT:9042}
+    keyspace-name: ${SPRING_CASSANDRA_KEYSPACE:hospital}
+    local-datacenter: ${SPRING_CASSANDRA_LOCAL_DATACENTER:dc1}
+
+server:
+  port: 8081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+app:
+  messaging:
+    appointments-queue: ${APPOINTMENTS_QUEUE:appointments.queue}
+    appointments-exchange: ${APPOINTMENTS_EXCHANGE:appointments.exchange}
+  notifications:
+    fallback-recipient: ${PATIENT_REMINDER_FALLBACK_RECIPIENT:paciente@hospital.com}
+  email:
+    gmail:
+      host: ${GMAIL_SMTP_HOST:smtp.gmail.com}
+      port: ${GMAIL_SMTP_PORT:587}
+      username: ${GMAIL_USERNAME:}
+      app-password: ${GMAIL_APP_PASSWORD:}
+      from: ${GMAIL_FROM:}

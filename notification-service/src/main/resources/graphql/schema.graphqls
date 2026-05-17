@@ -1,0 +1,30 @@
+type Query {
+  notifications: [Notification!]!
+  notificationById(id: ID!): Notification!
+}
+
+type Mutation {
+  createNotification(input: CreateNotificationInput!): Notification!
+  sendNotification(id: ID!): Notification!
+}
+
+input CreateNotificationInput {
+  appointmentId: ID!
+  recipient: String!
+  subject: String!
+  message: String!
+  channel: String!
+}
+
+type Notification {
+  id: ID!
+  appointmentId: ID!
+  recipient: String!
+  subject: String!
+  message: String!
+  channel: String!
+  status: String!
+  createdAt: String!
+  sentAt: String
+  failureReason: String
+}

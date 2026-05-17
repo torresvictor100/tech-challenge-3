@@ -1,0 +1,103 @@
+services:
+  cassandra:
+    image: cassandra:5.0
+    container_name: tc_cassandra
+    ports:
+      - "9042:9042"
+    environment:
+      CASSANDRA_CLUSTER_NAME: tech-challenge-cluster
+      CASSANDRA_DC: dc1
+      CASSANDRA_RACK: rack1
+      CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+      - ./docs/cassandra:/docs/cassandra:ro
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'DESCRIBE KEYSPACES' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: tc_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  appointment-service:
+    build:
+      context: ./appointment-service
+      dockerfile: Dockerfile
+    container_name: appointment_service
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      SPRING_CASSANDRA_CONTACT_POINTS: ${SPRING_CASSANDRA_CONTACT_POINTS:-cassandra}
+      SPRING_CASSANDRA_PORT: ${SPRING_CASSANDRA_PORT:-9042}
+      SPRING_CASSANDRA_KEYSPACE: ${SPRING_CASSANDRA_KEYSPACE:-hospital}
+      SPRING_CASSANDRA_LOCAL_DATACENTER: ${SPRING_CASSANDRA_LOCAL_DATACENTER:-dc1}
+      SPRING_RABBITMQ_HOST: ${SPRING_RABBITMQ_HOST:-rabbitmq}
+      SPRING_RABBITMQ_PORT: ${SPRING_RABBITMQ_PORT:-5672}
+      APPOINTMENTS_QUEUE: ${APPOINTMENTS_QUEUE:-appointments.queue}
+      APPOINTMENTS_EXCHANGE: ${APPOINTMENTS_EXCHANGE:-appointments.exchange}
+      JAVA_TOOL_OPTIONS: ${APPOINTMENT_JAVA_TOOL_OPTIONS:--agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005}
+    ports:
+      - "8080:8080"
+      - "127.0.0.1:5005:5005"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification_service
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      SPRING_CASSANDRA_CONTACT_POINTS: ${SPRING_CASSANDRA_CONTACT_POINTS:-cassandra}
+      SPRING_CASSANDRA_PORT: ${SPRING_CASSANDRA_PORT:-9042}
+      SPRING_CASSANDRA_KEYSPACE: ${SPRING_CASSANDRA_KEYSPACE:-hospital}
+      SPRING_CASSANDRA_LOCAL_DATACENTER: ${SPRING_CASSANDRA_LOCAL_DATACENTER:-dc1}
+      SPRING_RABBITMQ_HOST: ${SPRING_RABBITMQ_HOST:-rabbitmq}
+      SPRING_RABBITMQ_PORT: ${SPRING_RABBITMQ_PORT:-5672}
+      APPOINTMENTS_QUEUE: ${APPOINTMENTS_QUEUE:-appointments.queue}
+      APPOINTMENTS_EXCHANGE: ${APPOINTMENTS_EXCHANGE:-appointments.exchange}
+      GMAIL_SMTP_HOST: ${GMAIL_SMTP_HOST:-smtp.gmail.com}
+      GMAIL_SMTP_PORT: ${GMAIL_SMTP_PORT:-587}
+      GMAIL_USERNAME: ${GMAIL_USERNAME:-}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
+      GMAIL_FROM: ${GMAIL_FROM:-}
+      PATIENT_REMINDER_FALLBACK_RECIPIENT: ${PATIENT_REMINDER_FALLBACK_RECIPIENT:-paciente@hospital.com}
+      JAVA_TOOL_OPTIONS: ${NOTIFICATION_JAVA_TOOL_OPTIONS:--agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5006}
+    ports:
+      - "8081:8081"
+      - "127.0.0.1:5006:5006"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  cassandra_data:

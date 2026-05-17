@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: notification-service
+
+server:
+  port: 8081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  notifications:
+    fallback-recipient: ${PATIENT_REMINDER_FALLBACK_RECIPIENT:paciente@hospital.com}
+  email:
+    gmail:
+      host: ${GMAIL_SMTP_HOST:smtp.gmail.com}
+      port: ${GMAIL_SMTP_PORT:587}
+      username: ${GMAIL_USERNAME:}
+      app-password: ${GMAIL_APP_PASSWORD:}
+      from: ${GMAIL_FROM:}

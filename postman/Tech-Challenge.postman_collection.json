@@ -1,0 +1,2444 @@
+{
+  "info": {
+    "name": "Tech Challenge - Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection unica para rodar os cenarios principais no Postman Runner: health, autenticacao Basic Auth, REST, GraphQL, erros HTTP e notification-service. Importe tambem o environment Tech-Challenge.postman_environment.json, selecione o environment e clique em Run collection."
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const defaults = {",
+          "  appointmentBaseUrl: pm.environment.get('appointmentBaseUrl') || 'http://localhost:8080',",
+          "  notificationBaseUrl: pm.environment.get('notificationBaseUrl') || 'http://localhost:8081',",
+          "  patientId: '00000000-0000-0000-0000-000000000601',",
+          "  otherPatientId: '99999999-9999-9999-9999-999999999991',",
+          "  unknownPatientId: '99999999-9999-9999-9999-999999999992',",
+          "  professionalId: '00000000-0000-0000-0000-000000000701',",
+          "  unknownProfessionalId: '99999999-9999-9999-9999-999999999993',",
+          "  professionalName: 'Dra. Marina Costa',",
+          "  unknownAppointmentId: '99999999-9999-9999-9999-999999999994',",
+          "  unknownNotificationId: '99999999-9999-9999-9999-999999999995'",
+          "};",
+          "Object.entries(defaults).forEach(([key, value]) => pm.variables.set(key, value));"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Health público",
+      "item": [
+        {
+          "name": "Appointment health público 200",
+          "request": {
+            "method": "GET",
+            "url": "{{appointmentBaseUrl}}/actuator/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Notification health público 200",
+          "request": {
+            "method": "GET",
+            "url": "{{notificationBaseUrl}}/actuator/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Appointment internal ping público 200",
+          "request": {
+            "method": "GET",
+            "url": "{{appointmentBaseUrl}}/internal/ping"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 - Autenticação Basic Auth",
+      "description": "Basic Auth não possui endpoint de login/token. Estes requests validam se as credenciais conseguem acessar rotas protegidas.",
+      "item": [
+        {
+          "name": "Login correto - médico acessa rota protegida 200",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('resposta é array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login correto - enfermeiro acessa rota protegida 200",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "enfermeiro@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('resposta é array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login correto - paciente acessa próprio histórico 200",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "paciente@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{appointmentBaseUrl}}/api/patients/{{patientId}}/appointments"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('resposta é array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login errado - senha inválida retorna 401",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "senha-errada",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('code UNAUTHORIZED', () => pm.expect(body.code).to.eql('UNAUTHORIZED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sem login - rota protegida retorna 401",
+          "request": {
+            "method": "GET",
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('code UNAUTHORIZED', () => pm.expect(body.code).to.eql('UNAUTHORIZED'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 - Appointment REST sucesso",
+      "item": [
+        {
+          "name": "Criar consulta correta 201",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set('patientId', '00000000-0000-0000-0000-000000000601');",
+                  "pm.variables.set('professionalId', '00000000-0000-0000-0000-000000000701');",
+                  "pm.variables.set('professionalName', 'Dra. Marina Costa');",
+                  "const date = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000 + Math.floor(Math.random() * 3600000));",
+                  "pm.variables.set('createScheduledAt', date.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('tem Location', () => pm.expect(pm.response.headers.get('Location')).to.exist);",
+                  "const body = pm.response.json();",
+                  "pm.test('tem appointmentId', () => pm.expect(body.appointmentId).to.be.a('string').and.not.empty);",
+                  "pm.test('patientId correto', () => pm.expect(body.patientId).to.eql('00000000-0000-0000-0000-000000000601'));",
+                  "pm.test('professionalId correto', () => pm.expect(body.professionalId).to.eql('00000000-0000-0000-0000-000000000701'));",
+                  "pm.environment.set('appointmentId', body.appointmentId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"professionalId\": \"{{professionalId}}\",\n  \"professionalName\": \"{{professionalName}}\",\n  \"scheduledAt\": \"{{createScheduledAt}}\",\n  \"status\": \"SCHEDULED\",\n  \"notes\": \"Consulta criada corretamente via Postman\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          }
+        },
+        {
+          "name": "Buscar consulta criada por ID 200",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{appointmentBaseUrl}}/api/appointments/{{appointmentId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('appointmentId confere', () => pm.expect(pm.response.json().appointmentId).to.eql(pm.environment.get('appointmentId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar todas as consultas como médico 200",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('resposta é array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar consulta correta 200",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const date = new Date(Date.now() + 32 * 24 * 60 * 60 * 1000 + Math.floor(Math.random() * 3600000));",
+                  "pm.variables.set('updateScheduledAt', date.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('status atualizado', () => pm.expect(body.status).to.eql('CONFIRMED'));",
+                  "pm.test('appointmentId mantido', () => pm.expect(body.appointmentId).to.eql(pm.environment.get('appointmentId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "enfermeiro@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"professionalId\": \"{{professionalId}}\",\n  \"professionalName\": \"{{professionalName}}\",\n  \"scheduledAt\": \"{{updateScheduledAt}}\",\n  \"status\": \"CONFIRMED\",\n  \"notes\": \"Consulta atualizada corretamente via Postman\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments/{{appointmentId}}"
+          }
+        },
+        {
+          "name": "Histórico do paciente - rota /api/appointments/patients 200",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{appointmentBaseUrl}}/api/appointments/patients/{{patientId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('resposta é array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Histórico do paciente - rota /api/patients 200",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "paciente@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{appointmentBaseUrl}}/api/patients/{{patientId}}/appointments"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('resposta é array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultas futuras do paciente 200",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{appointmentBaseUrl}}/api/patients/{{patientId}}/appointments/upcoming"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('resposta é array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar consulta para confirmar 201",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const date = new Date(Date.now() + 33 * 24 * 60 * 60 * 1000 + Math.floor(Math.random() * 3600000));",
+                  "pm.variables.set('confirmScheduledAt', date.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('confirmAppointmentId', pm.response.json().appointmentId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"professionalId\": \"{{professionalId}}\",\n  \"professionalName\": \"{{professionalName}}\",\n  \"scheduledAt\": \"{{confirmScheduledAt}}\",\n  \"status\": \"SCHEDULED\",\n  \"notes\": \"Consulta para confirmar\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          }
+        },
+        {
+          "name": "Confirmar consulta 200",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "url": "{{appointmentBaseUrl}}/api/appointments/{{confirmAppointmentId}}/confirm"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('status CONFIRMED', () => pm.expect(pm.response.json().status).to.eql('CONFIRMED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar consulta para cancelar 201",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const date = new Date(Date.now() + 34 * 24 * 60 * 60 * 1000 + Math.floor(Math.random() * 3600000));",
+                  "pm.variables.set('cancelScheduledAt', date.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('cancelAppointmentId', pm.response.json().appointmentId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"professionalId\": \"{{professionalId}}\",\n  \"professionalName\": \"{{professionalName}}\",\n  \"scheduledAt\": \"{{cancelScheduledAt}}\",\n  \"status\": \"SCHEDULED\",\n  \"notes\": \"Consulta para cancelar\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          }
+        },
+        {
+          "name": "Cancelar consulta 200",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "enfermeiro@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "url": "{{appointmentBaseUrl}}/api/appointments/{{cancelAppointmentId}}/cancel"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('status CANCELED', () => pm.expect(pm.response.json().status).to.eql('CANCELED'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 - Perfis e permissões REST",
+      "description": "Cenários por perfil. Médicos e enfermeiros executam operações clínicas; pacientes só consultam dados próprios.",
+      "item": [
+        {
+          "name": "Médico cria consulta 201",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const date = new Date(Date.now() + 37 * 24 * 60 * 60 * 1000 + Math.floor(Math.random() * 3600000));",
+                  "pm.variables.set(\"doctorProfileScheduledAt\", date.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"appointmentId criado\", () => pm.expect(body.appointmentId).to.be.a(\"string\").and.not.empty);",
+                  "pm.test(\"professionalId correto\", () => pm.expect(body.professionalId).to.eql(pm.variables.get(\"professionalId\")));",
+                  "pm.environment.set(\"profileDoctorAppointmentId\", body.appointmentId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"professionalId\": \"{{professionalId}}\",\n  \"professionalName\": \"{{professionalName}}\",\n  \"scheduledAt\": \"{{doctorProfileScheduledAt}}\",\n  \"status\": \"SCHEDULED\",\n  \"notes\": \"Criada por médico para teste de perfil\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          }
+        },
+        {
+          "name": "Médico lista todas as consultas 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"resposta é array\", () => pm.expect(pm.response.json()).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          }
+        },
+        {
+          "name": "Enfermeiro cria consulta 201",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const date = new Date(Date.now() + 38 * 24 * 60 * 60 * 1000 + Math.floor(Math.random() * 3600000));",
+                  "pm.variables.set(\"nurseProfileScheduledAt\", date.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"appointmentId criado\", () => pm.expect(body.appointmentId).to.be.a(\"string\").and.not.empty);",
+                  "pm.environment.set(\"profileNurseAppointmentId\", body.appointmentId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "enfermeiro@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"professionalId\": \"{{professionalId}}\",\n  \"professionalName\": \"{{professionalName}}\",\n  \"scheduledAt\": \"{{nurseProfileScheduledAt}}\",\n  \"status\": \"SCHEDULED\",\n  \"notes\": \"Criada por enfermeiro para teste de perfil\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          }
+        },
+        {
+          "name": "Enfermeiro edita consulta do médico 200",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const date = new Date(Date.now() + 39 * 24 * 60 * 60 * 1000 + Math.floor(Math.random() * 3600000));",
+                  "pm.variables.set(\"nurseProfileUpdateScheduledAt\", date.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"appointmentId mantido\", () => pm.expect(body.appointmentId).to.eql(pm.environment.get(\"profileDoctorAppointmentId\")));",
+                  "pm.test(\"status CONFIRMED\", () => pm.expect(body.status).to.eql(\"CONFIRMED\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "enfermeiro@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"professionalId\": \"{{professionalId}}\",\n  \"professionalName\": \"{{professionalName}}\",\n  \"scheduledAt\": \"{{nurseProfileUpdateScheduledAt}}\",\n  \"status\": \"CONFIRMED\",\n  \"notes\": \"Consulta do médico editada por enfermeiro\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments/{{profileDoctorAppointmentId}}"
+          }
+        },
+        {
+          "name": "Enfermeiro confirma consulta 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"status CONFIRMED\", () => pm.expect(pm.response.json().status).to.eql(\"CONFIRMED\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "enfermeiro@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "url": "{{appointmentBaseUrl}}/api/appointments/{{profileNurseAppointmentId}}/confirm"
+          }
+        },
+        {
+          "name": "Médico cria consulta para paciente visualizar 201",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const date = new Date(Date.now() + 40 * 24 * 60 * 60 * 1000 + Math.floor(Math.random() * 3600000));",
+                  "pm.variables.set(\"patientProfileScheduledAt\", date.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"patientId correto\", () => pm.expect(body.patientId).to.eql(pm.variables.get(\"patientId\")));",
+                  "pm.environment.set(\"profilePatientAppointmentId\", body.appointmentId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"professionalId\": \"{{professionalId}}\",\n  \"professionalName\": \"{{professionalName}}\",\n  \"scheduledAt\": \"{{patientProfileScheduledAt}}\",\n  \"status\": \"SCHEDULED\",\n  \"notes\": \"Consulta para paciente consultar por perfil\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          }
+        },
+        {
+          "name": "Paciente busca própria consulta por ID 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"appointmentId confere\", () => pm.expect(body.appointmentId).to.eql(pm.environment.get(\"profilePatientAppointmentId\")));",
+                  "pm.test(\"patientId próprio\", () => pm.expect(body.patientId).to.eql(pm.variables.get(\"patientId\")));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "paciente@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{appointmentBaseUrl}}/api/appointments/{{profilePatientAppointmentId}}"
+          }
+        },
+        {
+          "name": "Paciente lista próprio histórico 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"resposta é array\", () => pm.expect(pm.response.json()).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "paciente@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{appointmentBaseUrl}}/api/patients/{{patientId}}/appointments"
+          }
+        },
+        {
+          "name": "Paciente lista todas as consultas 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"code ACCESS_DENIED\", () => pm.expect(body.code).to.eql(\"ACCESS_DENIED\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "paciente@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          }
+        },
+        {
+          "name": "Paciente tenta criar consulta 403",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const date = new Date(Date.now() + 41 * 24 * 60 * 60 * 1000 + Math.floor(Math.random() * 3600000));",
+                  "pm.variables.set(\"patientForbiddenCreateScheduledAt\", date.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"code ACCESS_DENIED\", () => pm.expect(body.code).to.eql(\"ACCESS_DENIED\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "paciente@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"professionalId\": \"{{professionalId}}\",\n  \"professionalName\": \"{{professionalName}}\",\n  \"scheduledAt\": \"{{patientForbiddenCreateScheduledAt}}\",\n  \"status\": \"SCHEDULED\",\n  \"notes\": \"Paciente não pode criar consulta\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          }
+        },
+        {
+          "name": "Paciente tenta editar consulta 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"code ACCESS_DENIED\", () => pm.expect(body.code).to.eql(\"ACCESS_DENIED\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "paciente@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CONFIRMED\",\n  \"notes\": \"Paciente não pode editar consulta\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments/{{profilePatientAppointmentId}}"
+          }
+        },
+        {
+          "name": "Paciente tenta confirmar consulta 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"code ACCESS_DENIED\", () => pm.expect(body.code).to.eql(\"ACCESS_DENIED\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "paciente@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "url": "{{appointmentBaseUrl}}/api/appointments/{{profilePatientAppointmentId}}/confirm"
+          }
+        },
+        {
+          "name": "Paciente tenta cancelar consulta 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"code ACCESS_DENIED\", () => pm.expect(body.code).to.eql(\"ACCESS_DENIED\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "paciente@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "url": "{{appointmentBaseUrl}}/api/appointments/{{profilePatientAppointmentId}}/cancel"
+          }
+        },
+        {
+          "name": "Paciente acessa histórico de outro paciente 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"code ACCESS_DENIED\", () => pm.expect(body.code).to.eql(\"ACCESS_DENIED\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "paciente@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{appointmentBaseUrl}}/api/patients/{{otherPatientId}}/appointments"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Appointment REST erros",
+      "item": [
+        {
+          "name": "Criar consulta sem autenticação 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"professionalId\": \"{{professionalId}}\",\n  \"scheduledAt\": \"2030-01-10T10:00:00Z\",\n  \"status\": \"SCHEDULED\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('code UNAUTHORIZED', () => pm.expect(pm.response.json().code).to.eql('UNAUTHORIZED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Paciente tentando criar consulta 403",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "paciente@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"professionalId\": \"{{professionalId}}\",\n  \"scheduledAt\": \"2030-01-10T10:00:00Z\",\n  \"status\": \"SCHEDULED\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "pm.test('code ACCESS_DENIED', () => pm.expect(pm.response.json().code).to.eql('ACCESS_DENIED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payload inválido - campos inválidos 400",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": null,\n  \"professionalId\": \"{{professionalId}}\",\n  \"scheduledAt\": \"2020-01-10T10:00:00Z\",\n  \"status\": \"INVALID\",\n  \"notes\": \"payload inválido\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('code VALIDATION_ERROR', () => pm.expect(body.code).to.eql('VALIDATION_ERROR'));",
+                  "pm.test('tem fieldErrors', () => pm.expect(body.fieldErrors.length).to.be.greaterThan(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "JSON malformado 400",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"patientId\": \"{{patientId}}\", "
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('code BAD_REQUEST', () => pm.expect(pm.response.json().code).to.eql('BAD_REQUEST'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Paciente inexistente 404",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{unknownPatientId}}\",\n  \"professionalId\": \"{{professionalId}}\",\n  \"scheduledAt\": \"2030-01-10T10:30:00Z\",\n  \"status\": \"SCHEDULED\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('code PATIENT_NOT_FOUND', () => pm.expect(pm.response.json().code).to.eql('PATIENT_NOT_FOUND'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Profissional inexistente 404",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"professionalId\": \"{{unknownProfessionalId}}\",\n  \"scheduledAt\": \"2030-01-10T11:00:00Z\",\n  \"status\": \"SCHEDULED\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('code PROFESSIONAL_NOT_FOUND', () => pm.expect(pm.response.json().code).to.eql('PROFESSIONAL_NOT_FOUND'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Profissional sem papel operacional 422",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"professionalId\": \"{{patientId}}\",\n  \"scheduledAt\": \"2030-01-10T11:30:00Z\",\n  \"status\": \"SCHEDULED\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "pm.test('code INVALID_PROFESSIONAL', () => pm.expect(pm.response.json().code).to.eql('INVALID_PROFESSIONAL'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar consulta inexistente 404",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"2030-01-10T12:00:00Z\",\n  \"status\": \"CONFIRMED\",\n  \"notes\": \"Atualização\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments/{{unknownAppointmentId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('code APPOINTMENT_NOT_FOUND', () => pm.expect(pm.response.json().code).to.eql('APPOINTMENT_NOT_FOUND'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar com payload inválido 400",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"2020-01-10T12:00:00Z\",\n  \"status\": \"INVALID\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments/{{appointmentId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('code VALIDATION_ERROR', () => pm.expect(pm.response.json().code).to.eql('VALIDATION_ERROR'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Paciente tentando editar consulta 403",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "paciente@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CONFIRMED\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments/{{appointmentId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "pm.test('code ACCESS_DENIED', () => pm.expect(pm.response.json().code).to.eql('ACCESS_DENIED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar consulta inexistente 404",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{appointmentBaseUrl}}/api/appointments/{{unknownAppointmentId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('code APPOINTMENT_NOT_FOUND', () => pm.expect(pm.response.json().code).to.eql('APPOINTMENT_NOT_FOUND'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Paciente tentando acessar outro paciente 403",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "paciente@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{appointmentBaseUrl}}/api/patients/{{otherPatientId}}/appointments"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "pm.test('code ACCESS_DENIED', () => pm.expect(pm.response.json().code).to.eql('ACCESS_DENIED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Preparar consulta para conflito 201",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const date = new Date(Date.now() + 35 * 24 * 60 * 60 * 1000 + Math.floor(Math.random() * 3600000));",
+                  "pm.environment.set('conflictScheduledAt', date.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('conflictAppointmentId', pm.response.json().appointmentId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"professionalId\": \"{{professionalId}}\",\n  \"scheduledAt\": \"{{conflictScheduledAt}}\",\n  \"status\": \"SCHEDULED\",\n  \"notes\": \"Consulta base para conflito\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          }
+        },
+        {
+          "name": "Conflito de agenda do profissional 409",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "medico@hospital.com",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"professionalId\": \"{{professionalId}}\",\n  \"scheduledAt\": \"{{conflictScheduledAt}}\",\n  \"status\": \"SCHEDULED\",\n  \"notes\": \"Mesmo profissional e horário\"\n}"
+            },
+            "url": "{{appointmentBaseUrl}}/api/appointments"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 409', () => pm.response.to.have.status(409));",
+                  "pm.test('code APPOINTMENT_CONFLICT', () => pm.expect(pm.response.json().code).to.eql('APPOINTMENT_CONFLICT'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 - Appointment GraphQL",
+      "description": "Requests GraphQL consolidados para testar criacao, atualizacao, historico, consultas futuras, busca por id e bloqueio de paciente.",
+      "item": [
+        {
+          "name": "01 - scheduleAppointment como medico",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const date = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000 + Math.floor(Math.random() * 3600000));",
+                  "pm.environment.set('futureScheduledAt', date.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('sem errors', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('criou appointmentId', () => pm.expect(body.data.scheduleAppointment.appointmentId).to.be.a('string').and.not.empty);",
+                  "pm.environment.set('graphqlAppointmentId', body.data.scheduleAppointment.appointmentId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{doctorUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{doctorPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation ScheduleAppointment($input: ScheduleAppointmentInput!) { scheduleAppointment(input: $input) { appointmentId patientId professionalId professionalName scheduledAt status notes } }\",\"variables\":{\"input\":{\"patientId\":\"{{patientId}}\",\"professionalId\":\"{{professionalId}}\",\"professionalName\":\"{{professionalName}}\",\"scheduledAt\":\"{{futureScheduledAt}}\",\"status\":\"SCHEDULED\",\"notes\":\"{{appointmentNotes}}\"}}}"
+            },
+            "url": "{{appointmentBaseUrl}}/graphql"
+          }
+        },
+        {
+          "name": "02 - updateAppointment como enfermeiro",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const date = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000 + Math.floor(Math.random() * 3600000));",
+                  "pm.environment.set('updatedScheduledAt', date.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('sem errors', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('atualizou status', () => pm.expect(body.data.updateAppointment.status).to.eql('CONFIRMED'));",
+                  "pm.test('manteve mesmo appointmentId', () => pm.expect(body.data.updateAppointment.appointmentId).to.eql(pm.environment.get('graphqlAppointmentId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{nurseUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{nursePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation UpdateAppointment($appointmentId: ID!, $input: UpdateAppointmentInput!) { updateAppointment(id: $appointmentId, input: $input) { appointmentId patientId professionalId professionalName scheduledAt status notes updatedAt } }\",\"variables\":{\"appointmentId\":\"{{graphqlAppointmentId}}\",\"input\":{\"professionalId\":\"{{alternateProfessionalId}}\",\"professionalName\":\"{{alternateProfessionalName}}\",\"scheduledAt\":\"{{updatedScheduledAt}}\",\"status\":\"CONFIRMED\",\"notes\":\"{{updatedAppointmentNotes}}\"}}}"
+            },
+            "url": "{{appointmentBaseUrl}}/graphql"
+          }
+        },
+        {
+          "name": "03 - scheduleAppointment como enfermeiro",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const date = new Date(Date.now() + 32 * 24 * 60 * 60 * 1000 + Math.floor(Math.random() * 3600000));",
+                  "pm.variables.set('nurseScheduledAt', date.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('sem errors', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.environment.set('graphqlNurseAppointmentId', body.data.scheduleAppointment.appointmentId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{nurseUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{nursePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation ScheduleAppointment($input: ScheduleAppointmentInput!) { scheduleAppointment(input: $input) { appointmentId patientId professionalId professionalName scheduledAt status notes } }\",\"variables\":{\"input\":{\"patientId\":\"{{patientId}}\",\"professionalId\":\"{{alternateProfessionalId}}\",\"professionalName\":\"{{alternateProfessionalName}}\",\"scheduledAt\":\"{{nurseScheduledAt}}\",\"status\":\"SCHEDULED\",\"notes\":\"Consulta criada por enfermeiro via GraphQL/Postman\"}}}"
+            },
+            "url": "{{appointmentBaseUrl}}/graphql"
+          }
+        },
+        {
+          "name": "04 - patientHistory como medico",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('sem errors', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('retorna patientId', () => pm.expect(body.data.patientHistory.patientId).to.eql(pm.environment.get('patientId')));",
+                  "pm.test('appointments e array', () => pm.expect(body.data.patientHistory.appointments).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{doctorUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{doctorPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query PatientHistory($patientId: ID!) { patientHistory(patientId: $patientId) { patientId appointments { appointmentId patientId professionalId professionalName scheduledAt status notes createdAt updatedAt } } }\",\"variables\":{\"patientId\":\"{{patientId}}\"}}"
+            },
+            "url": "{{appointmentBaseUrl}}/graphql"
+          }
+        },
+        {
+          "name": "05 - futureAppointments como medico",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('sem errors', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('retorna array', () => pm.expect(body.data.futureAppointments).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{doctorUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{doctorPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query FutureAppointments($patientId: ID!) { futureAppointments(patientId: $patientId) { appointmentId patientId professionalId professionalName scheduledAt status notes createdAt updatedAt } }\",\"variables\":{\"patientId\":\"{{patientId}}\"}}"
+            },
+            "url": "{{appointmentBaseUrl}}/graphql"
+          }
+        },
+        {
+          "name": "06 - appointmentById criado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('sem errors', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('retorna o appointmentId salvo', () => pm.expect(body.data.appointmentById.appointmentId).to.eql(pm.environment.get('graphqlAppointmentId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{doctorUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{doctorPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query AppointmentById($appointmentId: ID!) { appointmentById(id: $appointmentId) { appointmentId patientId professionalId professionalName scheduledAt status notes createdAt updatedAt } }\",\"variables\":{\"appointmentId\":\"{{graphqlAppointmentId}}\"}}"
+            },
+            "url": "{{appointmentBaseUrl}}/graphql"
+          }
+        },
+        {
+          "name": "07 - patientHistory como paciente dono",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('sem errors', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('retorna patientId do paciente logado', () => pm.expect(body.data.patientHistory.patientId).to.eql(pm.environment.get('patientId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{patientUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{patientPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query PatientHistory($patientId: ID!) { patientHistory(patientId: $patientId) { patientId appointments { appointmentId status scheduledAt } } }\",\"variables\":{\"patientId\":\"{{patientId}}\"}}"
+            },
+            "url": "{{appointmentBaseUrl}}/graphql"
+          }
+        },
+        {
+          "name": "08 - paciente nao modifica consulta",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200 ou 403 dependendo do tratamento GraphQL', () => pm.expect([200, 403]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('GraphQL retorna errors', () => pm.expect(pm.response.json().errors).to.exist);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{patientUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{patientPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation UpdateAppointment($appointmentId: ID!, $input: UpdateAppointmentInput!) { updateAppointment(id: $appointmentId, input: $input) { appointmentId status } }\",\"variables\":{\"appointmentId\":\"{{graphqlAppointmentId}}\",\"input\":{\"status\":\"SCHEDULED\",\"notes\":\"Tentativa paciente\"}}}"
+            },
+            "url": "{{appointmentBaseUrl}}/graphql"
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Notification REST",
+      "auth": {
+        "type": "basic",
+        "basic": [
+          {
+            "key": "username",
+            "value": "{{doctorUsername}}",
+            "type": "string"
+          },
+          {
+            "key": "password",
+            "value": "{{doctorPassword}}",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "Listar notificações 200",
+          "request": {
+            "method": "GET",
+            "url": "{{notificationBaseUrl}}/notifications"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('resposta é array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar notificação manual 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"appointmentId\": \"{{appointmentId}}\",\n  \"recipient\": \"paciente@example.com\",\n  \"subject\": \"Consulta agendada\",\n  \"message\": \"Sua consulta foi registrada.\",\n  \"channel\": \"EMAIL\"\n}"
+            },
+            "url": "{{notificationBaseUrl}}/notifications"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('tem id', () => pm.expect(body.id).to.be.a('string').and.not.empty);",
+                  "pm.environment.set('notificationId', body.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar notificação por ID 200",
+          "request": {
+            "method": "GET",
+            "url": "{{notificationBaseUrl}}/notifications/{{notificationId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('id confere', () => pm.expect(pm.response.json().id).to.eql(pm.environment.get('notificationId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar notificação inexistente 404",
+          "request": {
+            "method": "GET",
+            "url": "{{notificationBaseUrl}}/notifications/{{unknownNotificationId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

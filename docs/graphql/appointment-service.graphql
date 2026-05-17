@@ -1,0 +1,169 @@
+# Appointment Service GraphQL
+# Arquivo documental unico com schema SDL e exemplos de operacoes.
+# O schema usado em runtime continua em:
+# appointment-service/src/main/resources/graphql/schema.graphqls
+
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type Query {
+  appointments: [Appointment!]!
+  appointmentById(id: ID!): Appointment!
+  patientAppointments(patientId: ID!): [Appointment!]!
+  upcomingPatientAppointments(patientId: ID!): [Appointment!]!
+  patientHistory(patientId: ID!): PatientHistoryView!
+  futureAppointments(patientId: ID!): [AppointmentView!]!
+}
+
+type Mutation {
+  scheduleAppointment(input: ScheduleAppointmentInput!): Appointment!
+  updateAppointment(id: ID!, input: UpdateAppointmentInput!): Appointment!
+  confirmAppointment(id: ID!): Appointment!
+  cancelAppointment(id: ID!): Appointment!
+}
+
+input ScheduleAppointmentInput {
+  patientId: ID!
+  professionalId: ID!
+  professionalName: String!
+  scheduledAt: String!
+  status: String
+  notes: String
+}
+
+input UpdateAppointmentInput {
+  professionalId: ID
+  professionalName: String
+  scheduledAt: String
+  status: String
+  notes: String
+}
+
+type PatientHistoryView {
+  patientId: ID!
+  appointments: [AppointmentView!]!
+}
+
+type AppointmentView {
+  appointmentId: ID!
+  patientId: ID!
+  professionalId: ID!
+  professionalName: String!
+  scheduledAt: String!
+  status: String!
+  notes: String
+  createdAt: String!
+  updatedAt: String!
+}
+
+type Appointment {
+  id: ID!
+  appointmentId: ID!
+  patientId: ID!
+  professionalId: ID!
+  professionalName: String!
+  scheduledAt: String!
+  status: String!
+  notes: String
+  createdAt: String!
+  updatedAt: String!
+}
+
+# Operacoes com variaveis
+
+query PatientHistory($patientId: ID!) {
+  patientHistory(patientId: $patientId) {
+    patientId
+    appointments {
+      appointmentId
+      patientId
+      professionalId
+      professionalName
+      scheduledAt
+      status
+      notes
+      createdAt
+      updatedAt
+    }
+  }
+}
+
+query FutureAppointments($patientId: ID!) {
+  futureAppointments(patientId: $patientId) {
+    appointmentId
+    patientId
+    professionalId
+    professionalName
+    scheduledAt
+    status
+    notes
+    createdAt
+    updatedAt
+  }
+}
+
+mutation ScheduleAppointment($input: ScheduleAppointmentInput!) {
+  scheduleAppointment(input: $input) {
+    appointmentId
+    patientId
+    professionalId
+    professionalName
+    scheduledAt
+    status
+    notes
+  }
+}
+
+mutation UpdateAppointment($appointmentId: ID!, $input: UpdateAppointmentInput!) {
+  updateAppointment(id: $appointmentId, input: $input) {
+    appointmentId
+    patientId
+    professionalId
+    professionalName
+    scheduledAt
+    status
+    notes
+    updatedAt
+  }
+}
+
+query AppointmentById($appointmentId: ID!) {
+  appointmentById(id: $appointmentId) {
+    appointmentId
+    patientId
+    professionalId
+    professionalName
+    scheduledAt
+    status
+    notes
+    createdAt
+    updatedAt
+  }
+}
+
+# Exemplos diretos com paciente seedado
+
+query PatientHistoryExample {
+  patientHistory(patientId: "00000000-0000-0000-0000-000000000601") {
+    patientId
+    appointments {
+      appointmentId
+      scheduledAt
+      status
+      notes
+      professionalName
+    }
+  }
+}
+
+query FutureAppointmentsExample {
+  futureAppointments(patientId: "00000000-0000-0000-0000-000000000601") {
+    appointmentId
+    scheduledAt
+    status
+    notes
+    professionalName
+  }
+}

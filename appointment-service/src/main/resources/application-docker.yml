@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: appointment-service
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:rabbitmq}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+  cassandra:
+    contact-points: ${SPRING_CASSANDRA_CONTACT_POINTS:cassandra}
+    port: ${SPRING_CASSANDRA_PORT:9042}
+    keyspace-name: ${SPRING_CASSANDRA_KEYSPACE:hospital}
+    local-datacenter: ${SPRING_CASSANDRA_LOCAL_DATACENTER:dc1}
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+app:
+  messaging:
+    appointments-queue: ${APPOINTMENTS_QUEUE:appointments.queue}
+    appointments-exchange: ${APPOINTMENTS_EXCHANGE:appointments.exchange}

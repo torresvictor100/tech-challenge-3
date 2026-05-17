@@ -1,0 +1,62 @@
+type Query {
+  appointments: [Appointment!]!
+  appointmentById(id: ID!): Appointment!
+  patientAppointments(patientId: ID!): [Appointment!]!
+  upcomingPatientAppointments(patientId: ID!): [Appointment!]!
+  patientHistory(patientId: ID!): PatientHistoryView!
+  futureAppointments(patientId: ID!): [AppointmentView!]!
+}
+
+type Mutation {
+  scheduleAppointment(input: ScheduleAppointmentInput!): Appointment!
+  updateAppointment(id: ID!, input: UpdateAppointmentInput!): Appointment!
+  confirmAppointment(id: ID!): Appointment!
+  cancelAppointment(id: ID!): Appointment!
+}
+
+input ScheduleAppointmentInput {
+  patientId: ID!
+  professionalId: ID!
+  professionalName: String!
+  scheduledAt: String!
+  status: String
+  notes: String
+}
+
+input UpdateAppointmentInput {
+  professionalId: ID
+  professionalName: String
+  scheduledAt: String
+  status: String
+  notes: String
+}
+
+type PatientHistoryView {
+  patientId: ID!
+  appointments: [AppointmentView!]!
+}
+
+type AppointmentView {
+  appointmentId: ID!
+  patientId: ID!
+  professionalId: ID!
+  professionalName: String!
+  scheduledAt: String!
+  status: String!
+  notes: String
+  createdAt: String!
+  updatedAt: String!
+}
+
+type Appointment {
+  id: ID!
+  appointmentId: ID!
+  patientId: ID!
+  professionalId: ID!
+  professionalName: String!
+  scheduledAt: String!
+  status: String!
+  notes: String
+  createdAt: String!
+  updatedAt: String!
+}
