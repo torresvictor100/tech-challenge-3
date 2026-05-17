@@ -1,6 +1,6 @@
 # Documento de Avaliação - Tech Challenge Fase 3
-# Aluno: João Victor Torres Araújo - rm369354
-# GitHub : https://github.com/torresvictor100/tech-challenge-3
+# Aluno - João Victor Torres Araújo - rm369354
+# GitHub - https://github.com/torresvictor100/tech-challenge-3
 
 Este documento complementa o [README principal](../README.md) e organiza a entrega conforme os requisitos e fatores de avaliação da fase 3.
 
